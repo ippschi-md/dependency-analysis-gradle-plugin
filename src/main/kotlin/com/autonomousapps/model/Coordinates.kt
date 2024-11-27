@@ -199,7 +199,10 @@ data class IncludedBuildCoordinates(
   val resolvedProject: ProjectCoordinates,
   override val gradleVariantIdentification: GradleVariantIdentification,
 ) : Coordinates(identifier, gradleVariantIdentification) {
+
   override fun gav(): String = identifier
+
+  internal fun isForBuild(buildPath: String): Boolean = resolvedProject.buildPath == buildPath
 
   companion object {
     fun of(requested: ModuleCoordinates, resolvedProject: ProjectCoordinates) = IncludedBuildCoordinates(

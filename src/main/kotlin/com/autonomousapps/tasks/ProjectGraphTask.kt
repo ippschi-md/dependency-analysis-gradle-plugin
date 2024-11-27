@@ -8,11 +8,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.result.ResolvedComponentResult
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.CacheableTask
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 
 @CacheableTask
 abstract class ProjectGraphTask : DefaultTask() {
@@ -22,15 +18,18 @@ abstract class ProjectGraphTask : DefaultTask() {
     description = "Generates a graph view of this project's local dependency graph"
   }
 
-  /** Used for logging. */
-  @get:Input
-  abstract val projectPath: Property<String>
-
   /**
    * Used for relativizing output paths for logging. Internal because we don't want Gradle to hash the entire project.
    */
   @get:Internal
   abstract val rootDir: DirectoryProperty
+
+  @get:Input
+  abstract val buildPath: Property<String>
+
+  /** Used for logging. */
+  @get:Input
+  abstract val projectPath: Property<String>
 
   @get:Input
   abstract val compileClasspath: Property<ResolvedComponentResult>
@@ -44,6 +43,8 @@ abstract class ProjectGraphTask : DefaultTask() {
   @TaskAction fun action() {
     val compileOutput = output.file("project-compile-classpath.gv").getAndDelete()
     val runtimeOutput = output.file("project-runtime-classpath.gv").getAndDelete()
+    val compileTopOutput = output.file("project-compile-classpath-topological.txt").getAndDelete()
+    val runtimeTopOutput = output.file("project-runtime-classpath-topological.txt").getAndDelete()
 
     val compileGraph = GraphViewBuilder(
       root = compileClasspath.get(),
@@ -57,8 +58,15 @@ abstract class ProjectGraphTask : DefaultTask() {
       localOnly = true,
     ).graph
 
-    compileOutput.writeText(GraphWriter.toDot(compileGraph))
-    runtimeOutput.writeText(GraphWriter.toDot(runtimeGraph))
+    val graphWriter = GraphWriter(buildPath.get())
+
+    // Write graphs
+    compileOutput.writeText(graphWriter.toDot(compileGraph))
+    runtimeOutput.writeText(graphWriter.toDot(runtimeGraph))
+
+    // Write topological sorts
+    compileTopOutput.writeText(graphWriter.topological(compileGraph))
+    runtimeTopOutput.writeText(graphWriter.topological(runtimeGraph))
 
     // Print a message so users know how to do something with the generated .gv files.
     val msg = buildString {

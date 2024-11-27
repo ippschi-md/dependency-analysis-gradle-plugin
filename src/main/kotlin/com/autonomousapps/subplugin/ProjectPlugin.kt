@@ -706,6 +706,7 @@ internal class ProjectPlugin(private val project: Project) {
 
     val computeDominatorCompile =
       tasks.register<ComputeDominatorTreeTask>("computeDominatorTreeCompile$taskNameSuffix") {
+        buildPath.set(buildPath(dependencyAnalyzer.compileConfigurationName))
         projectPath.set(thisProjectPath)
         physicalArtifacts.set(artifactsReport.flatMap { it.output })
         graphView.set(graphViewTask.flatMap { it.output })
@@ -717,6 +718,7 @@ internal class ProjectPlugin(private val project: Project) {
 
     val computeDominatorRuntime =
       tasks.register<ComputeDominatorTreeTask>("computeDominatorTreeRuntime$taskNameSuffix") {
+        buildPath.set(buildPath(dependencyAnalyzer.runtimeConfigurationName))
         projectPath.set(thisProjectPath)
         physicalArtifacts.set(artifactsReportRuntime.flatMap { it.output })
         graphView.set(graphViewTask.flatMap { it.outputRuntime })
@@ -741,8 +743,9 @@ internal class ProjectPlugin(private val project: Project) {
 
     // Generates graph view of local (project) dependencies
     tasks.register<ProjectGraphTask>("generateProjectGraph$taskNameSuffix") {
-      projectPath.set(thisProjectPath)
       rootDir.set(theRootDir)
+      buildPath.set(buildPath(dependencyAnalyzer.compileConfigurationName))
+      projectPath.set(thisProjectPath)
 
       compileClasspath.set(
         configurations[dependencyAnalyzer.compileConfigurationName]
