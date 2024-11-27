@@ -626,6 +626,7 @@ internal class ProjectPlugin(private val project: Project) {
   private fun Project.analyzeDependencies(dependencyAnalyzer: DependencyAnalyzer) {
     configureAggregationTasks()
 
+    val theRootDir = rootDir
     val thisProjectPath = path
     val variantName = dependencyAnalyzer.variantName
     val taskNameSuffix = dependencyAnalyzer.taskNameSuffix
@@ -740,6 +741,9 @@ internal class ProjectPlugin(private val project: Project) {
 
     // Generates graph view of local (project) dependencies
     tasks.register<ProjectGraphTask>("generateProjectGraph$taskNameSuffix") {
+      projectPath.set(thisProjectPath)
+      rootDir.set(theRootDir)
+
       compileClasspath.set(
         configurations[dependencyAnalyzer.compileConfigurationName]
           .incoming
